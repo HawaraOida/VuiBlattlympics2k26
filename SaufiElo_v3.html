@@ -48,11 +48,11 @@
         const K_FACTOR = 32;
 
         // --- 2. SUPABASE KONFIGURATION ---
-        const SUPABASE_URL = 'IHRE_SUPABASE_PROJECT_URL_HIER'; // <-- HIER ERSETZEN!
-        const SUPABASE_ANON_KEY = 'IHR_OEFENTLICHER_ANON_KEY_HIER'; // <-- HIER ERSETZEN!
+        const SUPABASE_URL = 'https://tbeupewhdgcyxugxsfjd.supabase.co'; // <-- HIER ERSETZEN!
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZXVwZXdoZGdjeXh1Z3hzZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDY4NzIsImV4cCI6MjA3OTMyMjg3Mn0.hqICv1Yy4spdJa6sKZSnDXQL2r0sCHlBg3CL1DE10BU'; // <-- HIER ERSETZEN!
 
         // Supabase Client initialisieren
-        const supabase = supabase.createClient(https://tbeupewhdgcyxugxsfjd.supabase.co, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZXVwZXdoZGdjeXh1Z3hzZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDY4NzIsImV4cCI6MjA3OTMyMjg3Mn0.hqICv1Yy4spdJa6sKZSnDXQL2r0sCHlBg3CL1DE10BU);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         // ---------------------------------
         
         const app = {
@@ -488,4 +488,5 @@
         app.init();
     </script>
 </body>
+
 </html>
