@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wörld Serious of Saufi Saufi</title>
+    
+    <!-- 1. Tailwind CSS für das Design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. WICHTIG: Supabase Bibliothek laden (MUSS HIER STEHEN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        /* Einfache Animationen */
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 pb-20">
+
+    <!-- Header -->
+    <div class="bg-emerald-700 text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h18v18H3zM21 8H3M21 16H3M8 21V3M16 21V3" /> 
+                </svg>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">Saufi Saufi '26</h1>
+                    <p class="text-xs text-emerald-200">Elo Calc (K=32)</p>
+                </div>
+            </div>
+            <button onclick="app.exportCSV()" class="text-xs bg-emerald-800 hover:bg-emerald-900 px-3 py-2 rounded border border-emerald-600 transition flex items-center gap-1">
+                <span>📥</span> Excel/CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="max-w-3xl mx-auto mt-4 px-2">
+        <div class="flex bg-white rounded-lg shadow p-1 mb-6">
+            <button onclick="app.setTab('rank')" id="btn-rank" class="flex-1 py-2 rounded text-sm font-medium transition bg-emerald-100 text-emerald-800">Rangliste</button>
+            <button onclick="app.setTab('match')" id="btn-match" class="flex-1 py-2 rounded text-sm font-medium transition text-gray-500 hover:bg-gray-50">Match +</button>
+            <button onclick="app.setTab('settings')" id="btn-settings" class="flex-1 py-2 rounded text-sm font-medium transition text-gray-500 hover:bg-gray-50">Spieler</button>
+        </div>
+
+        <!-- Content Container -->
+        <div id="app-content" class="fade-in">
+            <div class="text-center mt-10 text-slate-500 flex flex-col items-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-700 mb-2"></div>
+                <p>Verbinde mit Datenbank...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const K_FACTOR = 32;
+
+        // **************************************************
+        // 3. KONFIGURATION (HIER DEINE DATEN EINFÜGEN!)
+        // **************************************************
+        const SUPABASE_URL = 'IHRE_SUPABASE_PROJECT_URL_HIER'; 
+        const SUPABASE_ANON_KEY = 'IHR_OEFENTLICHER_ANON_KEY_HIER'; 
+        
+        // Client initialisieren
+        let supabase;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.error("Supabase konnte nicht initialisiert werden. Prüfen Sie das <script> Tag.", e);
+            alert("Fehler: Supabase Bibliothek nicht geladen.");
+        }
+
+        const app = {
+            data: {
+                players: [],
+                history: [],
+                activeTab: 'rank',
+                matchInputs: Array(8).fill(''),
+                winnerMode: 0 // 0 = Ranking, 1 = Winner Takes All
+            },
+
+            init() {
+                // App starten: Daten laden
+                this.fetchData()
+                    .then(() => this.render())
+                    .catch((err) => this.renderError(err));
+            },
+
+            // --- DATEN LADEN ---
+            fetchData() {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        // 1. Spielerdaten laden
+                        let { data: players, error: playersError } = await supabase
+                            .from('players')
+                            .select('id, name, elo, matches, wins')
+                            .order('elo', { ascending: false });
+
+                        if (playersError) throw playersError;
+
+                        // 2. History laden
+                        let { data: history, error: historyError } = await supabase
+                            .from('history')
+                            .select('date, mode, ranking')
+                            .order('date', { ascending: false });
+                        
+                        if (historyError) throw historyError;
+
+                        this.data.players = players || [];
+                        
+                        // History Ranking String wieder in Array umwandeln
+                        this.data.history = (history || []).map(entry => ({
+                            ...entry,
+                            ranking: entry.ranking ? entry.ranking.split(',').map(s => s.trim()) : []
+                        }));
+
+                        // Falls DB leer ist: Initiale Spieler anlegen
+                        if (this.data.players.length === 0) {
+                            console.log("Datenbank leer, erstelle Standard-Spieler...");
+                             this.data.players = Array.from({length: 8}, (_, i) => ({
+                                id: 'p' + (i+1),
+                                name: 'Saufi ' + (i+1),
+                                elo: 1000,
+                                matches: 0,
+                                wins: 0
+                            }));
+                            await this.saveInitialPlayers(this.data.players);
+                        }
+
+                        resolve(true);
+
+                    } catch (error) {
+                        console.error("Ladefehler:", error);
+                        reject(error);
+                    }
+                });
+            },
+
+            async saveInitialPlayers(players) {
+                 const { error } = await supabase.from('players').insert(players);
+                 if (error) console.error("Init-Fehler:", error);
+            },
+            
+            // --- DATEN SPEICHERN ---
+            saveData(newHistoryEntry) {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        // 1. Spielerdaten aktualisieren (Löschen & Neu einfügen Methode)
+                        const { error: deleteError } = await supabase
+                            .from('players')
+                            .delete()
+                            .neq('id', 'deleted'); // Hack: Löscht alles, da keine ID 'deleted' ist
+                        
+                        if (deleteError) throw deleteError;
+                        
+                        const { error: insertPlayersError } = await supabase
+                            .from('players')
+                            .insert(this.data.players);
+                            
+                        if (insertPlayersError) throw insertPlayersError;
+
+                        // 2. History Eintrag speichern (nur wenn vorhanden)
+                        if (newHistoryEntry && newHistoryEntry.date) {
+                            const { error: insertHistoryError } = await supabase
+                                .from('history')
+                                .insert([{
+                                    date: newHistoryEntry.date,
+                                    mode: newHistoryEntry.mode,
+                                    ranking: newHistoryEntry.ranking.join(', ') // Array zu String
+                                }]);
+                            if (insertHistoryError) throw insertHistoryError;
+                        }
+
+                        resolve(true);
+                        
+                    } catch (error) {
+                        console.error("Speicherfehler:", error);
+                        reject(error);
+                    }
+                });
+            },
+
+            resetData() {
+                if(confirm("ACHTUNG: Dies löscht ALLE Daten in der Datenbank für immer! Fortfahren?")) {
+                    this.resetSupabaseData()
+                        .then(() => location.reload())
+                        .catch(err => alert("Fehler: " + err.message));
+                }
+            },
+            
+            async resetSupabaseData() {
+                await supabase.from('players').delete().neq('id', 'deleted');
+                await supabase.from('history').delete().neq('date', 'deleted');
+            },
+
+            // --- LOGIK & UI ---
+            setTab(tab) {
+                this.data.activeTab = tab;
+                this.render();
+            },
+
+            setWinnerMode(mode) {
+                this.data.winnerMode = mode;
+                this.render();
+            },
+
+            updateMatchInput(index, value) {
+                this.data.matchInputs[index] = value;
+            },
+
+            updatePlayerName(id, newName) {
+                const p = this.data.players.find(pl => pl.id === id);
+                if(p) {
+                    p.name = newName;
+                    // Automatisch speichern nach Namensänderung
+                    this.saveData(null).catch(e => alert("Fehler beim Speichern des Namens"));
+                }
+            },
+
+            getExpectation(ra, rb) {
+                return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+            },
+
+            submitMatch() {
+                const inputs = [];
+                for(let i=0; i<8; i++) {
+                    const el = document.getElementById(`match-select-${i}`);
+                    if(el) inputs.push(el.value);
+                }
+
+                const activeIds = inputs.filter(id => id !== "");
+
+                if (activeIds.length < 2) return alert("Mindestens 2 Spieler nötig!");
+                if (new Set(activeIds).size !== activeIds.length) return alert("Spieler doppelt ausgewählt!");
+
+                // Berechnung
+                const eloDeltas = {};
+                activeIds.forEach(id => eloDeltas[id] = 0);
+                const playersMap = new Map(this.data.players.map(p => [p.id, {...p}]));
+
+                for (let i = 0; i < activeIds.length; i++) {
+                    const pA = playersMap.get(activeIds[i]);
+                    for (let j = i + 1; j < activeIds.length; j++) {
+                        const pB = playersMap.get(activeIds[j]);
+                        
+                        const expA = this.getExpectation(pA.elo, pB.elo);
+                        const expB = this.getExpectation(pB.elo, pA.elo);
+
+                        let scoreA;
+                        
+                        // Modus Logik
+                        if (this.data.winnerMode === 1) { // Winner Takes All
+                            // Nur Platz 1 gewinnt gegen alle anderen. Andere spielen nicht gegeneinander.
+                            if (i === 0) {
+                                scoreA = 1; // Platz 1 gewinnt
+                            } else {
+                                continue; // Andere Paarungen werden ignoriert
+                            }
+                        } else {
+                            // Ranked: Jeder gegen Jeden basierend auf Position
+                            scoreA = (i < j) ? 1 : 0; 
+                        }
+                        
+                        // Nur berechnen wenn scoreA gesetzt wurde (für WinnerMode wichtig)
+                        if (scoreA !== undefined) {
+                            eloDeltas[activeIds[i]] += K_FACTOR * (scoreA - expA);
+                            eloDeltas[activeIds[j]] += K_FACTOR * ((1-scoreA) - expB);
+                        }
+                    }
+                }
+
+                // Anwenden
+                this.data.players = this.data.players.map(p => {
+                    if (eloDeltas[p.id] !== undefined) {
+                        const isWinner = activeIds[0] === p.id;
+                        return {
+                            ...p,
+                            elo: p.elo + eloDeltas[p.id],
+                            matches: p.matches + 1,
+                            wins: isWinner ? p.wins + 1 : p.wins
+                        };
+                    }
+                    return p;
+                });
+
+                const newHistoryEntry = {
+                    date: new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', hour: '2-digit', minute: '2-digit' }),
+                    mode: this.data.winnerMode,
+                    ranking: activeIds
+                };
+
+                // Speichern
+                const btn = document.getElementById('submit-btn');
+                if(btn) btn.innerText = "Speichere...";
+                
+                this.saveData(newHistoryEntry)
+                    .then(() => {
+                        this.data.history.unshift(newHistoryEntry);
+                        this.data.matchInputs = Array(8).fill('');
+                        this.data.activeTab = 'rank';
+                        this.render();
+                    })
+                    .catch((e) => {
+                        alert("Fehler beim Speichern! Prüfe Internet/RLS Policies.");
+                        if(btn) btn.innerText = "Berechnen & Speichern";
+                    });
+            },
+
+            exportCSV() {
+                let csv = "RANG,NAME,ELO,SPIELE,SIEGE\n";
+                [...this.data.players].sort((a,b) => b.elo - a.elo).forEach((p, i) => {
+                    csv += `${i+1},${p.name},${Math.round(p.elo)},${p.matches},${p.wins}\n`;
+                });
+                
+                csv += "\nMATCH HISTORY\nDATUM,MODUS,PLATZIERUNG...\n";
+                this.data.history.forEach(m => {
+                    const names = m.ranking.map(rid => this.data.players.find(p => p.id === rid)?.name).join(", ");
+                    csv += `${m.date},${m.mode === 1 ? 'WinnerOnly' : 'Ranked'},"${names}"\n`;
+                });
+
+                const link = document.createElement("a");
+                link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+                link.download = "SaufiSaufi_Elo_Export.csv";
+                link.click();
+            },
+
+            // --- RENDERING ---
+            render() {
+                // Navigation Buttons
+                ['rank', 'match', 'settings'].forEach(t => {
+                    const btn = document.getElementById(`btn-${t}`);
+                    if(btn) {
+                        if(this.data.activeTab === t) {
+                            btn.className = "flex-1 py-2 rounded text-sm font-medium transition bg-emerald-100 text-emerald-800 shadow-sm";
+                        } else {
+                            btn.className = "flex-1 py-2 rounded text-sm font-medium transition text-gray-500 hover:bg-gray-50";
+                        }
+                    }
+                });
+
+                const container = document.getElementById('app-content');
+                container.innerHTML = '';
+
+                if (this.data.activeTab === 'rank') this.renderRank(container);
+                else if (this.data.activeTab === 'match') this.renderMatch(container);
+                else if (this.data.activeTab === 'settings') this.renderSettings(container);
+            },
+            
+            renderError(err) {
+                const container = document.getElementById('app-content');
+                container.innerHTML = `
+                    <div class="p-5 bg-red-50 border border-red-200 text-red-700 rounded-lg text-center">
+                        <h2 class="font-bold mb-2">Verbindungsfehler</h2>
+                        <p class="text-sm mb-4">Konnte Datenbank nicht erreichen.</p>
+                        <div class="text-xs bg-white p-2 rounded border border-red-100 text-left overflow-auto max-h-32 font-mono mb-4">
+                            ${err.message || JSON.stringify(err)}
+                        </div>
+                        <p class="text-xs">Prüfe: URL, KEY und Supabase RLS Policies (SELECT=true).</p>
+                        <button onclick="location.reload()" class="mt-4 bg-red-600 text-white px-4 py-2 rounded text-sm">Neu laden</button>
+                    </div>
+                `;
+            },
+
+            renderRank(container) {
+                const sorted = [...this.data.players].sort((a,b) => b.elo - a.elo);
+                let html = `
+                    <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                                <tr><th class="p-3">#</th><th class="p-3">Name</th><th class="p-3 text-right">Elo</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">`;
+                
+                sorted.forEach((p, i) => {
+                    let medal = '';
+                    if(i===0) medal = '🥇';
+                    if(i===1) medal = '🥈';
+                    if(i===2) medal = '🥉';
+
+                    html += `
+                        <tr class="${i===0 ? 'bg-yellow-50' : ''}">
+                            <td class="p-3 text-slate-400 text-sm font-mono">${i+1}</td>
+                            <td class="p-3 font-medium">${p.name} ${medal}</td>
+                            <td class="p-3 text-right font-bold text-emerald-600 font-mono">${Math.round(p.elo)}</td>
+                        </tr>`;
+                });
+                html += `</tbody></table></div>`;
+
+                // History
+                html += `<h3 class="text-xs font-bold text-slate-400 uppercase mb-3 ml-1">Letzte Matches</h3><div class="space-y-3">`;
+                if(this.data.history.length === 0) html += `<p class="text-center text-sm text-slate-400 italic py-4">Keine Spiele bisher.</p>`;
+                
+                this.data.history.forEach(m => {
+                    const namesHtml = m.ranking.map((rid, idx) => {
+                        const name = this.data.players.find(p => p.id === rid)?.name || '?';
+                        const style = idx === 0 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 font-bold' : 'bg-white border-slate-200 text-slate-600';
+                        return `<span class="px-2 py-1 rounded text-xs border ${style}">${idx+1}. ${name}</span>`;
+                    }).join(' ');
+
+                    html += `
+                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-emerald-500">
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-1 uppercase tracking-wide">
+                                <span>${m.date}</span>
+                                <span>${m.mode === 1 ? 'Winner Only' : 'Ranked'}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1">${namesHtml}</div>
+                        </div>`;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+            },
+
+            renderMatch(container) {
+                const isRanked = this.data.winnerMode === 0;
+                let html = `
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <h2 class="font-bold mb-4">Neues Match eintragen</h2>
+                        
+                        <div class="flex gap-2 mb-6">
+                            <button onclick="app.setWinnerMode(0)" class="flex-1 p-2 rounded border text-xs ${isRanked ? 'bg-emerald-600 text-white border-emerald-600 shadow-inner' : 'bg-slate-50 text-slate-600'}">
+                                <strong>Platzierung</strong><br>Jeder Platz zählt
+                            </button>
+                            <button onclick="app.setWinnerMode(1)" class="flex-1 p-2 rounded border text-xs ${!isRanked ? 'bg-emerald-600 text-white border-emerald-600 shadow-inner' : 'bg-slate-50 text-slate-600'}">
+                                <strong>Winner Only</strong><br>Nur 1. Platz
+                            </button>
+                        </div>
+
+                        <div class="space-y-3 mb-6">`;
+                
+                for(let i=0; i<8; i++) {
+                    let options = `<option value="">-- Leer --</option>`;
+                    this.data.players.forEach(p => {
+                        const selected = this.data.matchInputs[i] === p.id ? 'selected' : '';
+                        options += `<option value="${p.id}" ${selected}>${p.name} (${Math.round(p.elo)})</option>`;
+                    });
+
+                    html += `
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-400 text-yellow-900' : 'bg-slate-200 text-slate-500'}">${i+1}</div>
+                            <select id="match-select-${i}" onchange="app.updateMatchInput(${i}, this.value)" class="flex-1 p-2 border rounded bg-slate-50 text-sm outline-none focus:border-emerald-500">
+                                ${options}
+                            </select>
+                        </div>`;
+                }
+
+                html += `</div>
+                        <button id="submit-btn" onclick="app.submitMatch()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded transition shadow">Berechnen & Speichern</button>
+                    </div>`;
+                container.innerHTML = html;
+            },
+
+            renderSettings(container) {
+                let html = `<div class="bg-white rounded-lg shadow p-5"><h2 class="font-bold mb-4">Spieler Namen</h2><div class="space-y-3 mb-6">`;
+                
+                this.data.players.forEach((p, i) => {
+                    html += `
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400 w-4">${i+1}</span>
+                            <input type="text" value="${p.name}" onchange="app.updatePlayerName('${p.id}', this.value)" class="flex-1 p-2 border rounded text-sm focus:border-emerald-500 outline-none">
+                        </div>`;
+                });
+
+                html += `</div>
+                        <div class="border-t pt-4 mt-4 text-center">
+                            <button onclick="app.resetData()" class="text-red-500 text-xs hover:underline">⚠️ Datenbank zurücksetzen</button>
+                        </div>
+                    </div>`;
+                container.innerHTML = html;
+            }
+        };
+
+        // Start
+        app.init();
+    </script>
+</body>
+</html>
