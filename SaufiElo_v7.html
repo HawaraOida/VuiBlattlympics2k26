@@ -8,8 +8,8 @@
     <!-- 1. Tailwind CSS für das Design -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. WICHTIG: Supabase Bibliothek laden (MUSS HIER STEHEN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 2. WICHTIG: Die UMD-Version der Supabase Bibliothek (funktionert im Browser besser) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -61,16 +61,24 @@
         // **************************************************
         // 3. KONFIGURATION (HIER DEINE DATEN EINFÜGEN!)
         // **************************************************
-        const SUPABASE_URL = 'https://tbeupewhdgcyxugxsfjd.supabase.co'; // <-- HIER ERSETZEN!
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZXVwZXdoZGdjeXh1Z3hzZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDY4NzIsImV4cCI6MjA3OTMyMjg3Mn0.hqICv1Yy4spdJa6sKZSnDXQL2r0sCHlBg3CL1DE10BU'; // <-- HIER ERSETZEN!
-
+        // ACHTUNG: Die Anführungszeichen '' müssen bleiben!
+        const SUPABASE_URL = 'IHRE_SUPABASE_PROJECT_URL_HIER'; 
+        const SUPABASE_ANON_KEY = 'IHR_OEFENTLICHER_ANON_KEY_HIER'; 
+        
         // Client initialisieren
-        let supabase;
+        let sbClient = null; // Variable umbenannt um Konflikte zu vermeiden
+
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Prüfen ob die Bibliothek geladen wurde
+            if (typeof supabase === 'undefined') {
+                throw new Error("Die Variable 'supabase' existiert nicht. Skript nicht geladen.");
+            }
+            // Verbindung herstellen
+            sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log("Supabase Client erfolgreich initialisiert.");
         } catch (e) {
-            console.error("Supabase konnte nicht initialisiert werden. Prüfen Sie das <script> Tag.", e);
-            alert("Fehler: Supabase Bibliothek nicht geladen.");
+            console.error("Supabase Init Fehler:", e);
+            alert("Fehler: Supabase Bibliothek nicht geladen. Details in der Konsole (F12). Grund: " + e.message);
         }
 
         const app = {
@@ -83,6 +91,8 @@
             },
 
             init() {
+                if (!sbClient) return; // Abbrechen wenn DB nicht da ist
+                
                 // App starten: Daten laden
                 this.fetchData()
                     .then(() => this.render())
@@ -94,7 +104,7 @@
                 return new Promise(async (resolve, reject) => {
                     try {
                         // 1. Spielerdaten laden
-                        let { data: players, error: playersError } = await supabase
+                        let { data: players, error: playersError } = await sbClient
                             .from('players')
                             .select('id, name, elo, matches, wins')
                             .order('elo', { ascending: false });
@@ -102,7 +112,7 @@
                         if (playersError) throw playersError;
 
                         // 2. History laden
-                        let { data: history, error: historyError } = await supabase
+                        let { data: history, error: historyError } = await sbClient
                             .from('history')
                             .select('date, mode, ranking')
                             .order('date', { ascending: false });
@@ -140,7 +150,7 @@
             },
 
             async saveInitialPlayers(players) {
-                 const { error } = await supabase.from('players').insert(players);
+                 const { error } = await sbClient.from('players').insert(players);
                  if (error) console.error("Init-Fehler:", error);
             },
             
@@ -149,14 +159,14 @@
                 return new Promise(async (resolve, reject) => {
                     try {
                         // 1. Spielerdaten aktualisieren (Löschen & Neu einfügen Methode)
-                        const { error: deleteError } = await supabase
+                        const { error: deleteError } = await sbClient
                             .from('players')
                             .delete()
-                            .neq('id', 'deleted'); // Hack: Löscht alles, da keine ID 'deleted' ist
+                            .neq('id', 'deleted'); // Hack: Löscht alles
                         
                         if (deleteError) throw deleteError;
                         
-                        const { error: insertPlayersError } = await supabase
+                        const { error: insertPlayersError } = await sbClient
                             .from('players')
                             .insert(this.data.players);
                             
@@ -164,7 +174,7 @@
 
                         // 2. History Eintrag speichern (nur wenn vorhanden)
                         if (newHistoryEntry && newHistoryEntry.date) {
-                            const { error: insertHistoryError } = await supabase
+                            const { error: insertHistoryError } = await sbClient
                                 .from('history')
                                 .insert([{
                                     date: newHistoryEntry.date,
@@ -192,8 +202,8 @@
             },
             
             async resetSupabaseData() {
-                await supabase.from('players').delete().neq('id', 'deleted');
-                await supabase.from('history').delete().neq('date', 'deleted');
+                await sbClient.from('players').delete().neq('id', 'deleted');
+                await sbClient.from('history').delete().neq('date', 'deleted');
             },
 
             // --- LOGIK & UI ---
@@ -264,7 +274,6 @@
                             scoreA = (i < j) ? 1 : 0; 
                         }
                         
-                        // Nur berechnen wenn scoreA gesetzt wurde (für WinnerMode wichtig)
                         if (scoreA !== undefined) {
                             eloDeltas[activeIds[i]] += K_FACTOR * (scoreA - expA);
                             eloDeltas[activeIds[j]] += K_FACTOR * ((1-scoreA) - expB);
@@ -477,4 +486,3 @@
     </script>
 </body>
 </html>
-
