@@ -10,10 +10,10 @@
     
     <!-- 2. WICHTIG: Die UMD-Version der Supabase Bibliothek -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-    <!-- 3. NEU: Favicon (Icon im Tab) 🍻 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍻</text></svg>">
     
+    <!-- 3. Favicon (Bier für den Saufi-Aspekt 🍻) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍻</text></svg>">
+
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
@@ -27,19 +27,18 @@
         <div class="max-w-3xl mx-auto flex items-start justify-between gap-2">
             <div class="flex items-start gap-3">
                 
-                <!-- NEU: Olympische Ringe Icon -->
+                <!-- Olympische Ringe Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <!-- Obere Reihe (Links, Mitte, Rechts) -->
+                    <!-- Obere Reihe -->
                     <circle cx="5.5" cy="8" r="3.5" />
                     <circle cx="12" cy="8" r="3.5" />
                     <circle cx="18.5" cy="8" r="3.5" />
-                    
-                    <!-- Untere Reihe (Links, Rechts) -->
+                    <!-- Untere Reihe -->
                     <circle cx="8.75" cy="13" r="3.5" />
                     <circle cx="15.25" cy="13" r="3.5" />
                 </svg>
-             
-                <!-- Titel und neuer Text -->
+                
+                <!-- Titel und Text -->
                 <div>
                     <h1 class="text-lg font-bold leading-tight">Wörld Serious of Saufi Saufi - VuiBlattlympics 2k26</h1>
                     <p class="text-[10px] text-emerald-100 leading-snug mt-1 max-w-md opacity-90">
@@ -124,11 +123,10 @@
 
                         if (playersError) throw playersError;
 
-                        // HIER NEU: match_name mit abrufen
+                        // Wir holen die History (Sortierung passiert gleich im JS, da Datenbank Textsortierung macht)
                         let { data: history, error: historyError } = await sbClient
                             .from('history')
-                            .select('date, mode, ranking, match_name')
-                            .order('date', { ascending: false });
+                            .select('date, mode, ranking, match_name');
                         
                         if (historyError) throw historyError;
 
@@ -138,6 +136,29 @@
                             ...entry,
                             ranking: entry.ranking ? entry.ranking.split(',').map(s => s.trim()) : []
                         }));
+
+                        // *** ERWEITERTE SORTIERUNG NACH DATUM ***
+                        // Parse das Format "dd.mm.yyyy, hh:mm" korrekt
+                        this.data.history.sort((a, b) => {
+                            const parseToTimestamp = (str) => {
+                                if (!str) return 0;
+                                // Regex für dd.mm.yyyy und optional hh:mm
+                                const parts = str.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})(?:,\s*(\d{1,2}):(\d{1,2}))?/);
+                                
+                                if (!parts) return 0; // Fallback
+                                
+                                const day = parseInt(parts[1], 10);
+                                const month = parseInt(parts[2], 10) - 1; // JS Monate sind 0-11
+                                const year = parseInt(parts[3], 10);
+                                const hour = parts[4] ? parseInt(parts[4], 10) : 0;
+                                const minute = parts[5] ? parseInt(parts[5], 10) : 0;
+                                
+                                return new Date(year, month, day, hour, minute).getTime();
+                            };
+
+                            // Absteigend (b - a): Neuestes Datum zuerst
+                            return parseToTimestamp(b.date) - parseToTimestamp(a.date);
+                        });
 
                         if (this.data.players.length === 0) {
                             console.log("Datenbank leer, erstelle Standard-Spieler...");
@@ -183,14 +204,13 @@
                         if (insertPlayersError) throw insertPlayersError;
 
                         if (newHistoryEntry && newHistoryEntry.date) {
-                            // HIER NEU: match_name mitspeichern
                             const { error: insertHistoryError } = await sbClient
                                 .from('history')
                                 .insert([{
                                     date: newHistoryEntry.date,
                                     mode: newHistoryEntry.mode,
                                     ranking: newHistoryEntry.ranking.join(', '),
-                                    match_name: newHistoryEntry.match_name || '' // Neuer Wert
+                                    match_name: newHistoryEntry.match_name || ''
                                 }]);
                             if (insertHistoryError) throw insertHistoryError;
                         }
@@ -245,9 +265,8 @@
             },
 
             submitMatch() {
-                // Match Name auslesen
-                const matchNameInput = document.getElementById('match-name-input');
-                const matchName = matchNameInput ? matchNameInput.value : '';
+                const matchNameInput = document.getElementById('input-match-name');
+                const matchName = matchNameInput ? matchNameInput.value.trim() : '';
 
                 const inputs = [];
                 for(let i=0; i<8; i++) {
@@ -305,10 +324,10 @@
                 });
 
                 const newHistoryEntry = {
-                    date: new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', hour: '2-digit', minute: '2-digit' }),
+                    date: new Date().toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric', hour: '2-digit', minute: '2-digit' }),
                     mode: this.data.winnerMode,
                     ranking: activeIds,
-                    match_name: matchName // Name wird hier ins Objekt gepackt
+                    match_name: matchName 
                 };
 
                 const btn = document.getElementById('submit-btn');
@@ -317,12 +336,29 @@
                 this.saveData(newHistoryEntry)
                     .then(() => {
                         this.data.history.unshift(newHistoryEntry);
+                        // Sortieren wir auch lokal sofort richtig
+                        this.data.history.sort((a, b) => {
+                             // Selbe Logik wie oben beim Laden
+                             const parseToTimestamp = (str) => {
+                                if (!str) return 0;
+                                const parts = str.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})(?:,\s*(\d{1,2}):(\d{1,2}))?/);
+                                if (!parts) return 0;
+                                const day = parseInt(parts[1], 10);
+                                const month = parseInt(parts[2], 10) - 1;
+                                const year = parseInt(parts[3], 10);
+                                const hour = parts[4] ? parseInt(parts[4], 10) : 0;
+                                const minute = parts[5] ? parseInt(parts[5], 10) : 0;
+                                return new Date(year, month, day, hour, minute).getTime();
+                            };
+                            return parseToTimestamp(b.date) - parseToTimestamp(a.date);
+                        });
+
                         this.data.matchInputs = Array(8).fill('');
                         this.data.activeTab = 'rank';
                         this.render();
                     })
                     .catch((e) => {
-                        alert("Fehler beim Speichern! Haben Sie die Spalte 'match_name' in Supabase angelegt?");
+                        alert("Fehler beim Speichern! Bitte prüfen Sie, ob die Spalte 'match_name' (Typ Text) in der Tabelle 'history' existiert!");
                         console.error(e);
                         if(btn) btn.innerText = "Berechnen & Speichern";
                     });
@@ -334,10 +370,9 @@
                     csv += `${i+1},${p.name},${Math.round(p.elo)},${p.matches},${p.wins}\n`;
                 });
                 
-                csv += "\nMATCH HISTORY\nDATUM,NAME,MODUS,PLATZIERUNG...\n";
+                csv += "\nMATCH HISTORY\nDATUM,MATCH-NAME,MODUS,PLATZIERUNG...\n";
                 this.data.history.forEach(m => {
                     const names = m.ranking.map(rid => this.data.players.find(p => p.id === rid)?.name).join(", ");
-                    // CSV auch erweitert um Match Name
                     csv += `${m.date},"${m.match_name || ''}",${m.mode === 1 ? 'WinnerOnly' : 'Ranked'},"${names}"\n`;
                 });
 
@@ -417,13 +452,15 @@
                         return `<span class="px-2 py-1 rounded text-xs border ${style}">${idx+1}. ${name}</span>`;
                     }).join(' ');
 
-                    // HIER NEU: Match Name anzeigen wenn vorhanden
-                    const matchTitle = m.match_name ? `<span class="font-bold text-emerald-700">"${m.match_name}"</span> - ` : '';
+                    const matchTitle = m.match_name ? `<span class="font-bold text-emerald-700 block mb-1 text-xs">"${m.match_name}"</span>` : '';
 
                     html += `
                         <div class="bg-white p-3 rounded shadow-sm border-l-4 border-emerald-500">
-                            <div class="flex justify-between text-[10px] text-slate-400 mb-1 uppercase tracking-wide">
-                                <span>${matchTitle}${m.date}</span>
+                            <div class="flex justify-between items-start text-[10px] text-slate-400 mb-1 uppercase tracking-wide">
+                                <div>
+                                    ${matchTitle}
+                                    <span>${m.date}</span>
+                                </div>
                                 <span>${m.mode === 1 ? 'Winner Only' : 'Ranked'}</span>
                             </div>
                             <div class="flex flex-wrap gap-1">${namesHtml}</div>
@@ -448,10 +485,10 @@
                             </button>
                         </div>
 
-                        <!-- HIER NEU: Eingabefeld für Match-Name -->
-                        <div class="mb-6">
-                            <label class="block text-xs text-slate-500 uppercase font-bold mb-2">Matchname</label>
-                            <input type="text" id="match-name-input" placeholder="z.B. Dart, Poker, ..." class="w-full p-2 border rounded text-sm focus:border-emerald-500 outline-none bg-slate-50">
+                        <!-- UPDATE: Neues Input Feld für Match Namen -->
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Match Name (Optional)</label>
+                            <input type="text" id="input-match-name" class="w-full p-2 border rounded text-sm outline-none focus:border-emerald-500 bg-slate-50" placeholder="z.B. Finale, Runde 1...">
                         </div>
 
                         <div class="space-y-3 mb-6">`;
@@ -502,7 +539,3 @@
     </script>
 </body>
 </html>
-
-
-
-
