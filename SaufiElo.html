@@ -85,8 +85,8 @@
                 activeTab: 'rank',
                 matchInputs: Array(8).fill(''),
                 winnerMode: 0,
-                // HIER kannst du die Bild-URL für das Bild unter der History ändern
-                footerImageUrl: 'https://images.unsplash.com/photo-1597075095400-b210064971da?auto=format&fit=crop&q=80&w=800' 
+                // Hardcoded Bild URL
+                footerImageUrl: 'https://i.imgur.com/gbT3wOm.jpeg' 
             },
 
             init() {
@@ -318,7 +318,6 @@
                         </div>`;
                 });
                 
-                // DAS BILD UNTER DER HISTORY
                 html += `</div>
                     <div class="mt-8 mb-4">
                         <div class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -389,15 +388,6 @@
                 
                 html += `</div></div>
                         
-                        <div class="border-t pt-4">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Footer Bild URL</label>
-                            <input type="text" value="${this.data.footerImageUrl}" 
-                                   onchange="app.data.footerImageUrl = this.value; app.render();" 
-                                   class="w-full p-2 border rounded text-sm focus:border-emerald-500 outline-none bg-slate-50"
-                                   placeholder="Bild URL hier einfügen...">
-                            <p class="text-[10px] text-slate-400 mt-1">Füge hier den Link zu einem Bild ein, das unter der Rangliste erscheinen soll.</p>
-                        </div>
-
                         <div class="border-t pt-4 mt-8 text-center">
                             <button onclick="app.resetData()" class="text-red-500 text-xs hover:underline">⚠️ Datenbank zurücksetzen</button>
                         </div>
