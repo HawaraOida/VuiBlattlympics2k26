@@ -104,14 +104,14 @@
 
             async fetchData() {
                 try {
-                    let { data: players, error: playersError } = await sbClient
+                    const { data: players, error: playersError } = await sbClient
                         .from('players')
                         .select('*')
                         .order('elo', { ascending: false });
 
                     if (playersError) throw playersError;
 
-                    let { data: history, error: historyError } = await sbClient
+                    const { data: history, error: historyError } = await sbClient
                         .from('history')
                         .select('*')
                         .order('match_id', { ascending: true });
@@ -132,7 +132,7 @@
                             matches: 0,
                             wins: 0
                         }));
-                        await sbClient.from('players').insert(this.data.players);
+                        await sbClient.from('players').upsert(this.data.players);
                     }
                 } catch (error) {
                     console.error("Ladefehler:", error);
@@ -142,19 +142,20 @@
 
             async saveData(newHistoryEntry) {
                 try {
-                    // Update ALL affected players in Supabase
-                    for(const p of this.data.players) {
-                        const { error } = await sbClient
-                            .from('players')
-                            .update({ 
-                                elo: p.elo, 
-                                matches: p.matches, 
-                                wins: p.wins 
-                            })
-                            .eq('id', p.id);
-                        if (error) throw error;
-                    }
+                    // WICHTIG: Alle Spieler-Updates parallel ausführen und auf Abschluss warten
+                    const playerUpdates = this.data.players.map(p => 
+                        sbClient.from('players').update({ 
+                            elo: p.elo, 
+                            matches: p.matches, 
+                            wins: p.wins 
+                        }).eq('id', p.id)
+                    );
+                    
+                    const results = await Promise.all(playerUpdates);
+                    const updateErrors = results.filter(r => r.error);
+                    if (updateErrors.length > 0) throw updateErrors[0].error;
 
+                    // Danach Historie speichern
                     if (newHistoryEntry) {
                         const nextId = this.data.history.length + 1;
                         const { error: insertHistoryError } = await sbClient
@@ -168,8 +169,9 @@
                             }]);
                         if (insertHistoryError) throw insertHistoryError;
                     }
+                    return true;
                 } catch (error) {
-                    console.error("Speicherfehler:", error);
+                    console.error("Speicherfehler in saveData:", error);
                     throw error;
                 }
             },
@@ -206,8 +208,14 @@
                 const activeIds = this.data.matchInputs.filter(id => id !== "");
 
                 if (activeIds.length < 2) return;
-                if (new Set(activeIds).size !== activeIds.length) return;
+                
+                const btn = document.getElementById('submit-btn');
+                if(btn) {
+                    btn.innerText = "Speichere...";
+                    btn.disabled = true;
+                }
 
+                // ELO Berechnung
                 const eloDeltas = {};
                 activeIds.forEach(id => eloDeltas[id] = 0);
                 const playersMap = new Map(this.data.players.map(p => [p.id, {...p}]));
@@ -223,9 +231,6 @@
                         const expB = this.getExpectation(pB.elo, pA.elo);
 
                         let scoreA = (this.data.winnerMode === 1) ? (i === 0 ? 1 : 0) : (i < j ? 1 : 0);
-                        
-                        // Im Winner Mode bekommt nur der Erste Punkte gegen alle anderen, 
-                        // aber die anderen verlieren nur gegen den Ersten.
                         if (this.data.winnerMode === 1 && i !== 0) continue;
 
                         eloDeltas[idA] += K_FACTOR * (scoreA - expA);
@@ -233,7 +238,7 @@
                     }
                 }
 
-                // Update local state first
+                // Lokalen State aktualisieren
                 this.data.players = this.data.players.map(p => {
                     if (eloDeltas[p.id] !== undefined) {
                         return {
@@ -252,22 +257,17 @@
                     ranking: activeIds,
                     match_name: matchName 
                 };
-
-                const btn = document.getElementById('submit-btn');
-                if(btn) {
-                    btn.innerText = "Speichere...";
-                    btn.disabled = true;
-                }
                 
                 try {
                     await this.saveData(newHistoryEntry);
-                    // Refresh data from DB to ensure sync
+                    // Nochmal frisch laden um sicher zu sein
                     await this.fetchData();
                     this.data.matchInputs = Array(8).fill('');
                     this.data.activeTab = 'rank';
                     this.render();
                 } catch (e) {
-                    console.error(e);
+                    console.error("Fehler beim Submit:", e);
+                    alert("Fehler beim Speichern in der Datenbank!");
                     if(btn) {
                         btn.innerText = "Berechnen & Speichern";
                         btn.disabled = false;
@@ -578,4 +578,3 @@
     </script>
 </body>
 </html>
-
