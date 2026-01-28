@@ -142,8 +142,17 @@
 
             async saveData(newHistoryEntry) {
                 try {
+                    // Update ALL affected players in Supabase
                     for(const p of this.data.players) {
-                        await sbClient.from('players').update(p).eq('id', p.id);
+                        const { error } = await sbClient
+                            .from('players')
+                            .update({ 
+                                elo: p.elo, 
+                                matches: p.matches, 
+                                wins: p.wins 
+                            })
+                            .eq('id', p.id);
+                        if (error) throw error;
                     }
 
                     if (newHistoryEntry) {
@@ -204,20 +213,27 @@
                 const playersMap = new Map(this.data.players.map(p => [p.id, {...p}]));
 
                 for (let i = 0; i < activeIds.length; i++) {
-                    const pA = playersMap.get(activeIds[i]);
+                    const idA = activeIds[i];
+                    const pA = playersMap.get(idA);
                     for (let j = i + 1; j < activeIds.length; j++) {
-                        const pB = playersMap.get(activeIds[j]);
+                        const idB = activeIds[j];
+                        const pB = playersMap.get(idB);
+                        
                         const expA = this.getExpectation(pA.elo, pB.elo);
                         const expB = this.getExpectation(pB.elo, pA.elo);
 
                         let scoreA = (this.data.winnerMode === 1) ? (i === 0 ? 1 : 0) : (i < j ? 1 : 0);
+                        
+                        // Im Winner Mode bekommt nur der Erste Punkte gegen alle anderen, 
+                        // aber die anderen verlieren nur gegen den Ersten.
                         if (this.data.winnerMode === 1 && i !== 0) continue;
 
-                        eloDeltas[activeIds[i]] += K_FACTOR * (scoreA - expA);
-                        eloDeltas[activeIds[j]] += K_FACTOR * ((1-scoreA) - expB);
+                        eloDeltas[idA] += K_FACTOR * (scoreA - expA);
+                        eloDeltas[idB] += K_FACTOR * ((1-scoreA) - expB);
                     }
                 }
 
+                // Update local state first
                 this.data.players = this.data.players.map(p => {
                     if (eloDeltas[p.id] !== undefined) {
                         return {
@@ -245,6 +261,7 @@
                 
                 try {
                     await this.saveData(newHistoryEntry);
+                    // Refresh data from DB to ensure sync
                     await this.fetchData();
                     this.data.matchInputs = Array(8).fill('');
                     this.data.activeTab = 'rank';
