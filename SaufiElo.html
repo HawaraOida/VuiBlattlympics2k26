@@ -4,26 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wörld Serious of Saufi Saufi</title>
-    
+
     <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- 2. Supabase Bibliothek -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    
-    <!-- 3. Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- 4. Favicon -->
+    <!-- 3. Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍻</text></svg>">
 
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        canvas { max-width: 100% !important; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 pb-20">
@@ -41,12 +35,13 @@
                 </svg>
                 <div>
                     <h1 class="text-lg font-bold leading-tight">Wörld Serious of Saufi Saufi - VuiBlattlympics 2k26</h1>
-                    <p class="text-[10px] text-emerald-100 leading-snug mt-1 max-w-md opacity-90 tracking-wider font-bold">
-                        Wörld Serious of Saufi Saufi - VuiBlattlympics 2k26 is des official Megaevent für olle, de liaba vui blattln statt trainiern. Kämpft werd net nur um Elo, sondern um'n heiligen Waundapokal zum Ausasaufn.
+                    <p class="text-[10px] text-emerald-100 leading-snug mt-1 max-w-md opacity-90">
+                        Official Megaevent für olle, de liaba vui blattln statt trainiern.
+                                                Wörld Serious of Saufi Saufi - VuiBlattlympics 2k26 is des official Megaevent für olle, de liaba vui blattln statt trainiern. Kämpft werd net nur um Elo, sondern um'n heiligen Waundapokal zum Ausasaufn.
                     </p>
                 </div>
             </div>
-            
+
             <button onclick="app.exportCSV()" class="text-xs bg-emerald-800 hover:bg-emerald-900 px-3 py-2 rounded border border-emerald-600 transition flex flex-col items-center gap-1 shrink-0">
                 <span class="text-lg">📥</span> 
                 <span class="hidden sm:inline">Excel</span>
@@ -55,19 +50,18 @@
     </div>
 
     <!-- Navigation -->
-    <div class="max-w-4xl mx-auto mt-4 px-2">
-        <div class="flex bg-white rounded-lg shadow p-1 mb-6 overflow-x-auto no-scrollbar">
-            <button onclick="app.setTab('rank')" id="btn-rank" class="flex-1 min-w-[80px] py-2 rounded text-xs sm:text-sm font-medium transition">Rangliste</button>
-            <button onclick="app.setTab('history')" id="btn-history" class="flex-1 min-w-[80px] py-2 rounded text-xs sm:text-sm font-medium transition">Matches</button>
-            <button onclick="app.setTab('match')" id="btn-match" class="flex-1 min-w-[80px] py-2 rounded text-xs sm:text-sm font-medium transition">Match +</button>
-            <button onclick="app.setTab('settings')" id="btn-settings" class="flex-1 min-w-[80px] py-2 rounded text-xs sm:text-sm font-medium transition">Spieler</button>
+    <div class="max-w-3xl mx-auto mt-4 px-2">
+        <div class="flex bg-white rounded-lg shadow p-1 mb-6">
+            <button onclick="app.setTab('rank')" id="btn-rank" class="flex-1 py-2 rounded text-sm font-medium transition">Rangliste</button>
+            <button onclick="app.setTab('match')" id="btn-match" class="flex-1 py-2 rounded text-sm font-medium transition">Match +</button>
+            <button onclick="app.setTab('settings')" id="btn-settings" class="flex-1 py-2 rounded text-sm font-medium transition">Spieler</button>
         </div>
 
         <!-- Content Container -->
-        <div id="app-content" class="fade-in max-w-3xl mx-auto">
+        <div id="app-content" class="fade-in">
             <div class="text-center mt-10 text-slate-500 flex flex-col items-center">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-700 mb-2"></div>
-                <p>Lade Daten...</p>
+                <p>Verbinde mit Datenbank...</p>
             </div>
         </div>
     </div>
@@ -76,7 +70,7 @@
         const K_FACTOR = 32;
         const SUPABASE_URL = 'https://tbeupewhdgcyxugxsfjd.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZXVwZXdoZGdjeXh1Z3hzZmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDY4NzIsImV4cCI6MjA3OTMyMjg3Mn0.hqICv1Yy4spdJa6sKZSnDXQL2r0sCHlBg3CL1DE10BU';
-        
+
         let sbClient = null;
 
         try {
@@ -92,6 +86,7 @@
                 activeTab: 'rank',
                 matchInputs: Array(8).fill(''),
                 winnerMode: 0,
+                // Hardcoded Bild URL
                 footerImageUrl: 'https://i.imgur.com/gbT3wOm.jpeg' 
             },
 
@@ -104,18 +99,18 @@
 
             async fetchData() {
                 try {
-                    const { data: players, error: playersError } = await sbClient
+                    let { data: players, error: playersError } = await sbClient
                         .from('players')
                         .select('*')
                         .order('elo', { ascending: false });
 
                     if (playersError) throw playersError;
 
-                    const { data: history, error: historyError } = await sbClient
+                    let { data: history, error: historyError } = await sbClient
                         .from('history')
                         .select('*')
-                        .order('match_id', { ascending: true });
-                    
+                        .order('match_id', { ascending: false });
+
                     if (historyError) throw historyError;
 
                     this.data.players = players || [];
@@ -132,7 +127,7 @@
                             matches: 0,
                             wins: 0
                         }));
-                        await sbClient.from('players').upsert(this.data.players);
+                        await sbClient.from('players').insert(this.data.players);
                     }
                 } catch (error) {
                     console.error("Ladefehler:", error);
@@ -142,20 +137,10 @@
 
             async saveData(newHistoryEntry) {
                 try {
-                    // WICHTIG: Alle Spieler-Updates parallel ausführen und auf Abschluss warten
-                    const playerUpdates = this.data.players.map(p => 
-                        sbClient.from('players').update({ 
-                            elo: p.elo, 
-                            matches: p.matches, 
-                            wins: p.wins 
-                        }).eq('id', p.id)
-                    );
-                    
-                    const results = await Promise.all(playerUpdates);
-                    const updateErrors = results.filter(r => r.error);
-                    if (updateErrors.length > 0) throw updateErrors[0].error;
+                    await sbClient.from('players').delete().neq('id', 'deleted');
+                    const { error: insertPlayersError } = await sbClient.from('players').insert(this.data.players);
+                    if (insertPlayersError) throw insertPlayersError;
 
-                    // Danach Historie speichern
                     if (newHistoryEntry) {
                         const nextId = this.data.history.length + 1;
                         const { error: insertHistoryError } = await sbClient
@@ -169,9 +154,8 @@
                             }]);
                         if (insertHistoryError) throw insertHistoryError;
                     }
-                    return true;
                 } catch (error) {
-                    console.error("Speicherfehler in saveData:", error);
+                    console.error("Speicherfehler:", error);
                     throw error;
                 }
             },
@@ -188,14 +172,13 @@
 
             updateMatchInput(index, value) {
                 this.data.matchInputs[index] = value;
-                this.render(); 
             },
 
-            async updatePlayerName(id, newName) {
+            updatePlayerName(id, newName) {
                 const p = this.data.players.find(pl => pl.id === id);
                 if(p) {
                     p.name = newName;
-                    await sbClient.from('players').update({name: newName}).eq('id', id);
+                    this.saveData(null).catch(e => alert("Fehler beim Speichern"));
                 }
             },
 
@@ -207,38 +190,28 @@
                 const matchName = document.getElementById('input-match-name')?.value.trim() || '';
                 const activeIds = this.data.matchInputs.filter(id => id !== "");
 
-                if (activeIds.length < 2) return;
-                
-                const btn = document.getElementById('submit-btn');
-                if(btn) {
-                    btn.innerText = "Speichere...";
-                    btn.disabled = true;
-                }
+                if (activeIds.length < 2) return alert("Mindestens 2 Spieler nötig!");
+                if (new Set(activeIds).size !== activeIds.length) return alert("Spieler doppelt ausgewählt!");
 
-                // ELO Berechnung
                 const eloDeltas = {};
                 activeIds.forEach(id => eloDeltas[id] = 0);
                 const playersMap = new Map(this.data.players.map(p => [p.id, {...p}]));
 
                 for (let i = 0; i < activeIds.length; i++) {
-                    const idA = activeIds[i];
-                    const pA = playersMap.get(idA);
+                    const pA = playersMap.get(activeIds[i]);
                     for (let j = i + 1; j < activeIds.length; j++) {
-                        const idB = activeIds[j];
-                        const pB = playersMap.get(idB);
-                        
+                        const pB = playersMap.get(activeIds[j]);
                         const expA = this.getExpectation(pA.elo, pB.elo);
                         const expB = this.getExpectation(pB.elo, pA.elo);
 
                         let scoreA = (this.data.winnerMode === 1) ? (i === 0 ? 1 : 0) : (i < j ? 1 : 0);
                         if (this.data.winnerMode === 1 && i !== 0) continue;
 
-                        eloDeltas[idA] += K_FACTOR * (scoreA - expA);
-                        eloDeltas[idB] += K_FACTOR * ((1-scoreA) - expB);
+                        eloDeltas[activeIds[i]] += K_FACTOR * (scoreA - expA);
+                        eloDeltas[activeIds[j]] += K_FACTOR * ((1-scoreA) - expB);
                     }
                 }
 
-                // Lokalen State aktualisieren
                 this.data.players = this.data.players.map(p => {
                     if (eloDeltas[p.id] !== undefined) {
                         return {
@@ -257,153 +230,96 @@
                     ranking: activeIds,
                     match_name: matchName 
                 };
-                
+
+                const btn = document.getElementById('submit-btn');
+                if(btn) btn.innerText = "Speichere...";
+
                 try {
                     await this.saveData(newHistoryEntry);
-                    // Nochmal frisch laden um sicher zu sein
                     await this.fetchData();
                     this.data.matchInputs = Array(8).fill('');
                     this.data.activeTab = 'rank';
                     this.render();
                 } catch (e) {
-                    console.error("Fehler beim Submit:", e);
-                    alert("Fehler beim Speichern in der Datenbank!");
-                    if(btn) {
-                        btn.innerText = "Berechnen & Speichern";
-                        btn.disabled = false;
-                    }
+                    alert("Fehler beim Speichern!");
+                    if(btn) btn.innerText = "Berechnen & Speichern";
                 }
             },
 
-            getChartData() {
-                const datasets = this.data.players.map((p, idx) => ({
-                    label: p.name,
-                    data: [1000],
-                    borderColor: `hsl(${(idx * 360 / this.data.players.length)}, 70%, 50%)`,
-                    backgroundColor: `hsl(${(idx * 360 / this.data.players.length)}, 70%, 50%)`,
-                    borderWidth: 2,
-                    tension: 0.2,
-                    pointRadius: 2,
-                    playerId: p.id
-                }));
-
-                const tempElo = {};
-                this.data.players.forEach(p => tempElo[p.id] = 1000);
-
-                this.data.history.forEach((m) => {
-                    const activeIds = m.ranking;
-                    const eloDeltas = {};
-                    activeIds.forEach(id => eloDeltas[id] = 0);
-
-                    for (let i = 0; i < activeIds.length; i++) {
-                        const idA = activeIds[i];
-                        for (let j = i + 1; j < activeIds.length; j++) {
-                            const idB = activeIds[j];
-                            const expA = this.getExpectation(tempElo[idA], tempElo[idB]);
-                            const expB = this.getExpectation(tempElo[idB], tempElo[idA]);
-                            let scoreA = (m.mode === 1) ? (i === 0 ? 1 : 0) : (i < j ? 1 : 0);
-                            if (m.mode === 1 && i !== 0) continue;
-                            eloDeltas[idA] += K_FACTOR * (scoreA - expA);
-                            eloDeltas[idB] += K_FACTOR * ((1-scoreA) - expB);
-                        }
-                    }
-
-                    Object.keys(eloDeltas).forEach(id => {
-                        tempElo[id] += eloDeltas[id];
-                    });
-
-                    datasets.forEach(ds => {
-                        ds.data.push(Math.round(tempElo[ds.playerId]));
-                    });
+            exportCSV() {
+                let csv = "RANG,NAME,ELO,SPIELE,SIEGE\n";
+                [...this.data.players].sort((a,b) => b.elo - a.elo).forEach((p, i) => {
+                    csv += `${i+1},${p.name},${Math.round(p.elo)},${p.matches},${p.wins}\n`;
                 });
-
-                return {
-                    labels: ['Start', ...this.data.history.map((_, i) => `Sp ${i+1}`)],
-                    datasets
-                };
-            },
-
-            renderChart() {
-                const ctx = document.getElementById('eloChart');
-                if (!ctx) return;
-                
-                const data = this.getChartData();
-                new Chart(ctx, {
-                    type: 'line',
-                    data: data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { intersect: false, mode: 'index' },
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 }, usePointStyle: true } },
-                            tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 10 }
-                        },
-                        scales: {
-                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
-                            x: { grid: { display: false }, ticks: { font: { size: 9 } } }
-                        }
-                    }
+                csv += "\nMATCH HISTORY\nID,DATUM,MATCH-NAME,MODUS,PLATZIERUNG...\n";
+                this.data.history.forEach(m => {
+                    const names = m.ranking.map(rid => this.data.players.find(p => p.id === rid)?.name).join(", ");
+                    csv += `${m.match_id},${m.date},"${m.match_name || ''}",${m.mode === 1 ? 'WinnerOnly' : 'Ranked'},"${names}"\n`;
                 });
+                const link = document.createElement("a");
+                link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+                link.download = "SaufiSaufi_Export.csv";
+                link.click();
             },
 
             render() {
                 const container = document.getElementById('app-content');
-                const tabs = ['rank', 'history', 'match', 'settings'];
-                
-                tabs.forEach(t => {
+                ['rank', 'match', 'settings'].forEach(t => {
                     const btn = document.getElementById(`btn-${t}`);
                     if(btn) btn.className = this.data.activeTab === t 
-                        ? "flex-1 min-w-[80px] py-2 rounded text-xs sm:text-sm font-medium transition bg-emerald-100 text-emerald-800 shadow-sm"
-                        : "flex-1 min-w-[80px] py-2 rounded text-xs sm:text-sm font-medium transition text-gray-500 hover:bg-gray-50";
+                        ? "flex-1 py-2 rounded text-sm font-medium transition bg-emerald-100 text-emerald-800 shadow-sm"
+                        : "flex-1 py-2 rounded text-sm font-medium transition text-gray-500 hover:bg-gray-50";
                 });
 
-                if (this.data.activeTab === 'rank') {
-                    this.renderRank(container);
-                    setTimeout(() => this.renderChart(), 10);
-                }
-                else if (this.data.activeTab === 'history') this.renderHistory(container);
+                if (this.data.activeTab === 'rank') this.renderRank(container);
                 else if (this.data.activeTab === 'match') this.renderMatch(container);
                 else if (this.data.activeTab === 'settings') this.renderSettings(container);
             },
 
             renderRank(container) {
                 const sorted = [...this.data.players].sort((a,b) => b.elo - a.elo);
-                let html = `
-                    <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-50 text-slate-500 text-[10px] sm:text-xs uppercase font-bold">
-                                <tr>
-                                    <th class="p-3 w-12 text-center">#</th>
-                                    <th class="p-3">Saufi</th>
-                                    <th class="p-3 text-right">Elo</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">`;
-                
+                let html = `<div class="bg-white rounded-lg shadow overflow-hidden mb-6"><table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase">
+                        <tr><th class="p-3">#</th><th class="p-3">Name</th><th class="p-3 text-right">Elo</th></tr>
+                    </thead><tbody class="divide-y divide-slate-100">`;
+
                 sorted.forEach((p, i) => {
                     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
-                    html += `<tr class="${i===0 ? 'bg-yellow-50' : 'hover:bg-slate-50 transition-colors'}">
-                        <td class="p-3 text-slate-400 text-sm font-mono text-center">${i+1}</td>
-                        <td class="p-3 font-medium flex items-center gap-2">
-                            ${p.name} <span class="text-lg">${medal}</span>
-                        </td>
+                    html += `<tr class="${i===0 ? 'bg-yellow-50' : ''}">
+                        <td class="p-3 text-slate-400 text-sm font-mono">${i+1}</td>
+                        <td class="p-3 font-medium">${p.name} ${medal}</td>
                         <td class="p-3 text-right font-bold text-emerald-600 font-mono">${Math.round(p.elo)}</td>
                     </tr>`;
                 });
                 html += `</tbody></table></div>`;
 
-                html += `
-                    <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
-                        <div class="p-4 border-b bg-slate-50">
-                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Saufkurvn</h3>
-                        </div>
-                        <div class="p-2 h-72 sm:h-96">
-                            <canvas id="eloChart"></canvas>
-                        </div>
-                    </div>`;
+                html += `<h3 class="text-xs font-bold text-slate-400 uppercase mb-3 ml-1">Letzte Matches</h3><div class="space-y-3 mb-8">`;
 
-                html += `
+                if(this.data.history.length === 0) {
+                    html += `<p class="text-center text-sm text-slate-400 italic py-4">Keine Spiele bisher.</p>`;
+                }
+
+                this.data.history.forEach(m => {
+                    const namesHtml = m.ranking.map((rid, idx) => {
+                        const name = this.data.players.find(p => p.id === rid)?.name || '?';
+                        const style = idx === 0 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 font-bold' : 'bg-white border-slate-200 text-slate-600';
+                        return `<span class="px-2 py-1 rounded text-[10px] border ${style}">${idx+1}. ${name}</span>`;
+                    }).join(' ');
+
+                    html += `
+                        <div class="bg-white p-3 rounded shadow-sm border-l-4 border-emerald-500">
+                            <div class="flex justify-between items-start text-[10px] text-slate-400 mb-1 uppercase tracking-wide">
+                                <div>
+                                    ${m.match_name ? `<span class="font-bold text-emerald-700 block mb-1 text-xs">"${m.match_name}"</span>` : ''}
+                                    <span>Spü: ${m.match_id} • ${m.date}</span>
+                                </div>
+                                <span>${m.mode === 1 ? 'Winner Only' : 'Ranked'}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-1 mt-2">${namesHtml}</div>
+                        </div>`;
+                });
+
+                html += `</div>
                     <div class="mt-8 mb-4">
                         <div class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                             <img src="${this.data.footerImageUrl}" 
@@ -411,6 +327,7 @@
                                  class="w-full h-auto rounded-md object-cover"
                                  onerror="this.parentElement.style.display='none'">
                             <div class="p-2 text-center">
+                                <p class="text-[10px] text-slate-400 italic uppercase tracking-widest">Saufi Saufi 2026 Memorial</p>
                                 <p class="text-[10px] text-slate-400 italic uppercase tracking-widest">Hüter des Waundapokals</p>
                             </div>
                         </div>
@@ -419,162 +336,80 @@
                 container.innerHTML = html;
             },
 
-            renderHistory(container) {
-                let html = `<h2 class="text-sm font-bold text-slate-500 uppercase mb-4 tracking-widest px-1">Spiel Historie</h2><div class="space-y-4 mb-8">`;
-                
-                if(this.data.history.length === 0) {
-                    html += `<div class="bg-white p-10 rounded-lg shadow text-center text-slate-400 italic">Keine Matches gefunden. Zeit zum Saufi Saufi!</div>`;
-                }
-                
-                [...this.data.history].reverse().forEach(m => {
-                    const namesHtml = m.ranking.map((rid, idx) => {
-                        const name = this.data.players.find(p => p.id === rid)?.name || '?';
-                        const style = idx === 0 ? 'bg-yellow-100 text-yellow-800 border-yellow-200 font-bold scale-105' : 'bg-white border-slate-200 text-slate-600';
-                        return `<span class="px-2 py-1 rounded text-[10px] border shadow-sm flex items-center gap-1 ${style}">
-                            <span class="opacity-50">${idx+1}.</span> ${name}
-                        </span>`;
-                    }).join('');
-
-                    html += `
-                        <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-emerald-500 hover:shadow-md transition-shadow">
-                            <div class="flex justify-between items-start text-[10px] text-slate-400 mb-2 uppercase tracking-wide">
-                                <div>
-                                    ${m.match_name ? `<span class="font-bold text-emerald-700 block mb-1 text-sm">"${m.match_name}"</span>` : ''}
-                                    <span class="bg-slate-100 px-2 py-0.5 rounded-full">Match #${m.match_id}</span> • <span>${m.date}</span>
-                                </div>
-                                <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold">${m.mode === 1 ? 'Winner Only' : 'Ranked'}</span>
-                            </div>
-                            <div class="flex flex-wrap gap-1.5 mt-3">${namesHtml}</div>
-                        </div>`;
-                });
-                
-                container.innerHTML = html + `</div>`;
-            },
-
             renderMatch(container) {
                 const isRanked = this.data.winnerMode === 0;
                 let html = `
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h2 class="font-bold text-lg mb-4 text-slate-700">Match eintragen</h2>
-                        
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Modus wählen</label>
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <h2 class="font-bold mb-4">Neues Match eintragen</h2>
                         <div class="flex gap-2 mb-6">
-                            <button onclick="app.setWinnerMode(0)" class="flex-1 p-3 rounded-lg border text-xs transition-all ${isRanked ? 'bg-emerald-600 text-white shadow-lg border-emerald-600 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                                PLATZIERUNG<br><span class="opacity-75 font-normal">Alle Plätze zählen</span>
+                            <button onclick="app.setWinnerMode(0)" class="flex-1 p-2 rounded border text-xs ${isRanked ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 text-slate-600'}">
+                                <strong>Platzierung</strong><br>Alle Plätze zählen
                             </button>
-                            <button onclick="app.setWinnerMode(1)" class="flex-1 p-3 rounded-lg border text-xs transition-all ${!isRanked ? 'bg-emerald-600 text-white shadow-lg border-emerald-600 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-                                WINNER ONLY<br><span class="opacity-75 font-normal">Nur der 1. gewinnt Elo</span>
+                            <button onclick="app.setWinnerMode(1)" class="flex-1 p-2 rounded border text-xs ${!isRanked ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 text-slate-600'}">
+                                <strong>Winner Only</strong><br>Nur 1. Platz wertet
                             </button>
                         </div>
-
-                        <div class="mb-6">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Match Bezeichnung</label>
-                            <input type="text" id="input-match-name" class="w-full p-3 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 border-slate-200" placeholder="z.B. Emma treiben">
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Match Name</label>
+                            <input type="text" id="input-match-name" class="w-full p-2 border rounded text-sm outline-none focus:border-emerald-500 bg-slate-50" placeholder="z.B. Stammtisch-Runde">
                         </div>
-
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Ranking (1. bis 8. Platz)</label>
-                        <div class="space-y-2.5 mb-8">`;
-                
-                const currentInputs = this.data.matchInputs;
-                const duplicates = currentInputs.filter((id, index) => id !== "" && currentInputs.indexOf(id) !== index);
+                        <div class="space-y-3 mb-6">`;
 
                 for(let i=0; i<8; i++) {
-                    const isDuplicate = currentInputs[i] !== "" && currentInputs.filter(id => id === currentInputs[i]).length > 1;
-                    let options = `<option value="">-- Nicht teilgenommen --</option>`;
+                    let options = `<option value="">-- Leer --</option>`;
                     this.data.players.forEach(p => {
-                        const selected = currentInputs[i] === p.id ? 'selected' : '';
+                        const selected = this.data.matchInputs[i] === p.id ? 'selected' : '';
                         options += `<option value="${p.id}" ${selected}>${p.name} (${Math.round(p.elo)})</option>`;
                     });
                     html += `
-                        <div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i===0 ? 'bg-yellow-400 text-yellow-900 border-2 border-yellow-200' : 'bg-slate-100 text-slate-400'}">${i+1}</div>
-                                <select onchange="app.updateMatchInput(${i}, this.value)" class="flex-1 p-2.5 border rounded-lg bg-white text-sm outline-none transition-colors ${isDuplicate ? 'border-red-500 bg-red-50 focus:border-red-600' : 'border-slate-200 focus:border-emerald-500'}">
-                                    ${options}
-                                </select>
-                            </div>
-                            ${isDuplicate ? `<p class="text-[10px] text-red-500 ml-11 mt-1 font-bold">⚠️ Spieler bereits ausgewählt!</p>` : ''}
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-400 text-yellow-900' : 'bg-slate-200 text-slate-500'}">${i+1}</div>
+                            <select onchange="app.updateMatchInput(${i}, this.value)" class="flex-1 p-2 border rounded bg-slate-50 text-sm outline-none focus:border-emerald-500">
+                                ${options}
+                            </select>
                         </div>`;
                 }
-
-                const hasDuplicates = duplicates.length > 0;
-                const activeCount = currentInputs.filter(id => id !== "").length;
-                const canSubmit = !hasDuplicates && activeCount >= 2;
-
-                container.innerHTML = html + `</div><button id="submit-btn" onclick="app.submitMatch()" ${!canSubmit ? 'disabled' : ''} class="w-full ${!canSubmit ? 'bg-slate-300 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 shadow-xl active:scale-[0.98]'} text-white font-bold py-4 rounded-xl transition-all">Match berechnen & speichern 🍻</button></div>`;
+                container.innerHTML = html + `</div><button id="submit-btn" onclick="app.submitMatch()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded transition shadow">Berechnen & Speichern</button></div>`;
             },
 
             renderSettings(container) {
                 let html = `
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h2 class="font-bold text-lg mb-6 text-slate-700 border-b pb-2">Spieler-Management</h2>
+                    <div class="bg-white rounded-lg shadow p-5">
+                        <h2 class="font-bold mb-4">Einstellungen</h2>
                         
                         <div class="mb-8">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-4">Namen anpassen</label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">`;
-                
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Spieler Namen</label>
+                            <div class="space-y-3">`;
+
                 this.data.players.forEach((p, i) => {
-                    html += `
-                    <div class="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                        <span class="text-[10px] font-bold text-slate-300 w-5">${i+1}</span>
-                        <input type="text" value="${p.name}" onchange="app.updatePlayerName('${p.id}', this.value)" class="flex-1 p-2 bg-transparent text-sm font-medium focus:text-emerald-700 outline-none">
+                    html += `<div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400 w-4">${i+1}</span>
+                        <input type="text" value="${p.name}" onchange="app.updatePlayerName('${p.id}', this.value)" class="flex-1 p-2 border rounded text-sm focus:border-emerald-500 outline-none">
                     </div>`;
                 });
-                
+
                 html += `</div></div>
                         
-                        <div class="border-t pt-10 mt-10 text-center">
-                            <p class="text-xs text-slate-400 mb-4">Achtung: Dies löscht alle bisherigen Elo-Daten und die Match-Historie!</p>
-                            <button onclick="app.resetData()" class="bg-red-50 text-red-600 border border-red-100 px-6 py-2 rounded-full text-xs font-bold hover:bg-red-600 hover:text-white transition-all uppercase tracking-widest">
-                                ⚠️ Datenbank zurücksetzen
-                            </button>
+                        <div class="border-t pt-4 mt-8 text-center">
+                            <button onclick="app.resetData()" class="text-red-500 text-xs hover:underline">⚠️ Datenbank zurücksetzen</button>
                         </div>
                     </div>`;
                 container.innerHTML = html;
             },
 
             async resetData() {
-                if(confirm("Wirklich ALLES löschen? Der heilige Gral wird weinen.")) {
-                    try {
-                        await sbClient.from('players').delete().neq('id', 'deleted');
-                        await sbClient.from('history').delete().neq('match_id', 0);
-                        location.reload();
-                    } catch (e) {
-                        console.error(e);
-                    }
+                if(confirm("Alle Daten unwiderruflich löschen?")) {
+                    await sbClient.from('players').delete().neq('id', 'deleted');
+                    await sbClient.from('history').delete().neq('match_id', 0);
+                    location.reload();
                 }
-            },
-            
-            exportCSV() {
-                let csv = "RANG,NAME,ELO,SPIELE,SIEGE\n";
-                [...this.data.players].sort((a,b) => b.elo - a.elo).forEach((p, i) => {
-                    csv += `${i+1},"${p.name}",${Math.round(p.elo)},${p.matches},${p.wins}\n`;
-                });
-                csv += "\nMATCH HISTORY\nID,DATUM,MATCH-NAME,MODUS,PLATZIERUNG...\n";
-                this.data.history.forEach(m => {
-                    const names = m.ranking.map(rid => this.data.players.find(p => p.id === rid)?.name).join(", ");
-                    csv += `${m.match_id},${m.date},"${m.match_name || ''}",${m.mode === 1 ? 'WinnerOnly' : 'Ranked'},"${names}"\n`;
-                });
-                
-                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `SaufiSaufi_Export_${new Date().toLocaleDateString()}.csv`;
-                link.click();
             },
 
             renderError(err) {
-                document.getElementById('app-content').innerHTML = `
-                    <div class="p-8 bg-red-50 text-red-700 rounded-xl text-center border border-red-100 shadow-sm">
-                        <div class="text-4xl mb-4">🔌</div>
-                        <h3 class="font-bold mb-2">Verbindungsfehler</h3>
-                        <p class="text-sm opacity-75 mb-4">${err.message}</p>
-                        <button onclick="location.reload()" class="bg-red-600 text-white px-6 py-2 rounded-full text-xs font-bold">Erneut versuchen</button>
-                    </div>`;
+                document.getElementById('app-content').innerHTML = `<div class="p-5 bg-red-50 text-red-700 rounded-lg text-center">Fehler: ${err.message}</div>`;
             }
         };
 
-        window.onload = () => app.init();
+        app.init();
     </script>
 </body>
-</html>
