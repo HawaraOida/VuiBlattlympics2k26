@@ -6,8 +6,8 @@
     <title>Wörld Serious of Saufi Saufi</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍻</text></svg>">
 
@@ -15,6 +15,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .fade-in { animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        canvas { max-width: 100%; height: auto !important; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 pb-20">
@@ -82,7 +83,6 @@
                 matchInputs: Array(8).fill(''),
                 winnerMode: 0,
                 footerImageUrl: 'https://i.imgur.com/gbT3wOm.jpeg',
-                // Vereinsrollen Daten
                 roles: [
                     { title: "Präsi", sub: "Obmann", name: "Stef", img: "https://tbeupewhdgcyxugxsfjd.supabase.co/storage/v1/object/public/vereinsbilder/stef.jpeg" },
                     { title: "Meister der Münze", sub: "Kassier", name: "Essa", img: "https://tbeupewhdgcyxugxsfjd.supabase.co/storage/v1/object/public/vereinsbilder/i.jpeg" },
@@ -283,19 +283,15 @@
             },
 
             renderRoles(c) {
-                // grid-cols-1 (Handy: 1 Spalte) | sm:grid-cols-2 (Tablet/Desktop: 2 Spalten)
                 let h = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">`; 
-
                 this.data.roles.forEach(r => {
                     h += `<div class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 text-center transition-transform hover:scale-[1.02]">
                         <div class="w-32 h-32 sm:w-40 sm:h-40 mx-auto rounded-full bg-slate-100 mb-4 border-4 border-emerald-500 shadow-inner overflow-hidden flex items-center justify-center">
                             <img src="${r.img}" class="w-full h-full object-cover" 
                                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>👤</text></svg>'">
                         </div>
-
                         <h3 class="text-emerald-700 font-bold text-lg sm:text-xl leading-tight">${r.title}</h3>
                         <p class="text-xs text-slate-400 uppercase tracking-widest mb-3 font-semibold">${r.sub}</p>
-
                         <div class="inline-block px-4 py-1 rounded-full bg-emerald-50 text-emerald-800 text-sm font-bold border border-emerald-100">
                             ${r.name}
                         </div>
@@ -320,6 +316,15 @@
                     </tr>`;
                 });
                 html += `</tbody></table></div>`;
+
+                // --- GRAPH ---
+                html += `
+                <div class="bg-white rounded-lg shadow p-4 mb-8">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 ml-1">Punkteverlauf</h3>
+                    <div class="h-80 sm:h-[400px] w-full"> 
+                        <canvas id="eloChart"></canvas>
+                    </div>
+                </div>`;
 
                 html += `<h3 class="text-xs font-bold text-slate-400 uppercase mb-3 ml-1">Letzte Matches</h3><div class="space-y-3 mb-8">`;
 
@@ -362,6 +367,97 @@
                     </div>`;
 
                 container.innerHTML = html;
+                setTimeout(() => this.initEloChart(), 50);
+            },
+
+initEloChart() {
+                const ctx = document.getElementById('eloChart');
+                if (!ctx) return;
+
+                // 1. Historie strikt chronologisch sortieren (1, 2, 3...)
+                const chronHistory = [...this.data.history].sort((a, b) => Number(a.match_id) - Number(b.match_id));
+                
+                const currentEloMap = {};
+                const historyPoints = {}; 
+                
+                // Startwert für alle Spieler fix auf 1000.0
+                this.data.players.forEach(p => {
+                    currentEloMap[p.id] = 1000.0;
+                    historyPoints[p.id] = [1000];
+                });
+
+                // 2. Simulation der Elo-Historie
+                chronHistory.forEach(match => {
+                    const activeIds = match.ranking; 
+                    const eloDeltas = {};
+                    activeIds.forEach(id => eloDeltas[id] = 0);
+
+                    // Modus sicher als Nummer interpretieren (0 = Ranked, 1 = Winner Only)
+                    const currentMode = Number(match.mode);
+
+                    for (let i = 0; i < activeIds.length; i++) {
+                        const idA = activeIds[i];
+                        const eloA = currentEloMap[idA];
+                        
+                        for (let j = i + 1; j < activeIds.length; j++) {
+                            const idB = activeIds[j];
+                            const eloB = currentEloMap[idB];
+
+                            const expA = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
+                            const expB = 1 / (1 + Math.pow(10, (eloA - eloB) / 400));
+
+                            // Score Logik exakt wie in submitMatch
+                            let scoreA = (currentMode === 1) ? (i === 0 ? 1 : 0) : (i < j ? 1 : 0);
+                            
+                            // Im "Winner Only" Modus zählen nur Duelle, wo der Sieger (Index 0) beteiligt ist
+                            if (currentMode === 1 && i !== 0) continue;
+
+                            eloDeltas[idA] += K_FACTOR * (scoreA - expA);
+                            eloDeltas[idB] += K_FACTOR * ((1 - scoreA) - expB);
+                        }
+                    }
+
+                    // Werte aktualisieren
+                    this.data.players.forEach(p => {
+                        if (eloDeltas[p.id] !== undefined) {
+                            currentEloMap[p.id] += eloDeltas[p.id];
+                        }
+                        // Wir speichern den gerundeten Wert für den Graph-Punkt
+                        historyPoints[p.id].push(Math.round(currentEloMap[p.id]));
+                    });
+                });
+
+                // 3. Chart.js Zeichnen
+                const labels = ["Start", ...chronHistory.map((m) => m.match_name ? m.match_name : `Spü ${m.match_id}`)];
+                const colors = ['#059669', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#718096'];
+
+                const datasets = this.data.players.map((p, idx) => ({
+                    label: p.name,
+                    data: historyPoints[p.id],
+                    borderColor: colors[idx % colors.length],
+                    backgroundColor: colors[idx % colors.length],
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    tension: 0.15
+                }));
+
+                if (window.myChart) window.myChart.destroy();
+                window.myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } }
+                        },
+                        scales: {
+                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                        }
+                    }
+                });
             },
 
             renderMatch(container) {
@@ -401,24 +497,18 @@
             },
 
             renderSettings(container) {
-                let html = `
-                    <div class="bg-white rounded-lg shadow p-5">
+                let html = `<div class="bg-white rounded-lg shadow p-5">
                         <h2 class="font-bold mb-4">Einstellungen</h2>
-                        
                         <div class="mb-8">
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Spieler Namen</label>
                             <div class="space-y-3">`;
-
                 this.data.players.forEach((p, i) => {
                     html += `<div class="flex items-center gap-2">
                         <span class="text-xs text-slate-400 w-4">${i+1}</span>
                         <input type="text" value="${p.name}" onchange="app.updatePlayerName('${p.id}', this.value)" class="flex-1 p-2 border rounded text-sm focus:border-emerald-500 outline-none">
                     </div>`;
                 });
-
-                html += `</div></div>
-                
-                    </div>`;
+                html += `</div></div></div>`;
                 container.innerHTML = html;
             },
 
