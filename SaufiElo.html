@@ -51,7 +51,7 @@
             <button onclick="app.setTab('rank')" id="btn-rank" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Rangliste</button>
             <button onclick="app.setTab('match')" id="btn-match" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Vereine</button>
             <button onclick="app.setTab('roles')" id="btn-roles" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Vereinsvorstand</button>
-            <button onclick="app.setTab('settings')" id="btn-settings" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">new</button>
+            <button onclick="app.setTab('news')" id="btn-news" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">News</button>
         </div>
 
         <div id="app-content" class="fade-in">
@@ -91,6 +91,45 @@
                     { title: "Pfusch-Sekretär", sub: "Schriftführer", name: "Rene", img: "https://tbeupewhdgcyxugxsfjd.supabase.co/storage/v1/object/public/vereinsbilder/Rene.jpeg" },
                     { title: "Kreuzritterin des Hexenschusses", sub: "Yoga-Instruktorin", name: "Sarah", img: "https://tbeupewhdgcyxugxsfjd.supabase.co/storage/v1/object/public/vereinsbilder/sarah.jpeg" },
                     { title: "Gamba Minister", sub: "Freizeitkoordinator", name: "Mitch", img: "https://tbeupewhdgcyxugxsfjd.supabase.co/storage/v1/object/public/vereinsbilder/mitch.jpeg" }
+                ],
+                // 3 Beispiele für die Vereine
+                clubs: [
+                    {
+                        name: "SV Vollfett 09",
+                        img: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80",
+                        description: "Traditionsverein seit 2009. Bekannt für kompromisslosen Einsatz am Stammtisch und unerschütterlichen Kampfgeist.",
+                        members: "14 Mitglieder",
+                        link: "#"
+                    },
+                    {
+                        name: "1. FC Blattlglanz",
+                        img: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=600&q=80",
+                        description: "Die Präzisions-Blattler des Bezirks. Immer vorne dabei wenn es um Punkte, Präzision und Feierlaune geht.",
+                        members: "18 Mitglieder",
+                        link: "#"
+                    },
+                    {
+                        name: "SpVgg Promille 2000",
+                        img: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=600&q=80",
+                        description: "Der Rekordchampion für gesellige Stunden. Legen großen Wert auf Taktik, Teamgeist und Pokalpflege.",
+                        members: "22 Mitglieder",
+                        link: "#"
+                    }
+                ],
+                // 2 Bereiche für News (Titel, Bild, Bildunterschrift, Text)
+                news: [
+                    {
+                        title: "Saisonauftakt 2026: Die VuiBlattlympics sind offiziell eröffnet!",
+                        img: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+                        caption: "Feierliche Eröffnung der neuen Saison mit Pokalübergabe am Stammtisch.",
+                        text: "Die Vorbereitungen sind abgeschlossen und die Gläser gefüllt. Die Season 2 startet mit Rekordbeteiligung. Wer holt sich dieses Jahr den heiligen Wandapokal? Wir halten euch über alle Entwicklungen und Match-Ergebnisse auf dem Laufenden."
+                    },
+                    {
+                        title: "Neuer Vereinsvorstand einstimmig bestätigt",
+                        img: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80",
+                        caption: "Der frisch gewählte Vorstand blickt zuversichtlich in die kommende Saison.",
+                        text: "In einer hochdramatischen Abstimmung wurde das neue Führungsteam rund um Präsi Stef einstimmig bestätigt. Alle Details zu den Rollen, Aufgaben und Verantwortlichkeiten findet ihr im Vereinsvorstand-Tab."
+                    }
                 ]
             },
 
@@ -260,7 +299,7 @@
 
             render() {
                 const container = document.getElementById('app-content');
-                ['rank', 'match', 'roles', 'settings'].forEach(t => {
+                ['rank', 'match', 'roles', 'news'].forEach(t => {
                     const btn = document.getElementById(`btn-${t}`);
                     if(btn) btn.className = this.data.activeTab === t 
                         ? "flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition bg-emerald-100 text-emerald-800 shadow-sm"
@@ -270,7 +309,7 @@
                 if (this.data.activeTab === 'rank') this.renderRank(container);
                 else if (this.data.activeTab === 'match') this.renderMatch(container);
                 else if (this.data.activeTab === 'roles') this.renderRoles(container);
-                else if (this.data.activeTab === 'settings') this.renderSettings(container);
+                else if (this.data.activeTab === 'news') this.renderNews(container);
             },
 
             renderRoles(c) {
@@ -478,36 +517,72 @@
                 });
             },
 
+            // --- VEREINE TAB ---
             renderMatch(container) {
-                let html = `<div class="bg-white rounded-lg shadow p-5">
-                        <h2 class="font-bold mb-4">Vereine</h2>
-                        <p class="text-sm text-slate-500">Keine Vereine vorhanden.</p>
-                    </div>`;
-                container.innerHTML = html;
-            },
+                let html = `
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-slate-800 mb-1">Unsere Vereine</h2>
+                    <p class="text-xs text-slate-500">Übersicht aller teilnehmenden Mannschaften & Teams.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">`;
 
-            renderSettings(container) {
-                let html = `<div class="bg-white rounded-lg shadow p-5">
-                        <h2 class="font-bold mb-4">Einstellungen</h2>
-                        <div class="mb-8">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Spieler Namen</label>
-                            <div class="space-y-3">`;
-                this.data.players.forEach((p, i) => {
-                    html += `<div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400 w-4">${i+1}</span>
-                        <span class="flex-1 p-2 border rounded text-sm bg-slate-50 text-slate-700 font-medium">${p.name}</span>
+                this.data.clubs.forEach(c => {
+                    html += `
+                    <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col justify-between transition-transform hover:scale-[1.02]">
+                        <div>
+                            <div class="relative h-44 w-full bg-slate-100 overflow-hidden">
+                                <img src="${c.img}" alt="${c.name}" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🛡️</text></svg>'">
+                                <span class="absolute top-3 right-3 bg-emerald-600/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow">
+                                    ${c.members}
+                                </span>
+                            </div>
+                            <div class="p-5">
+                                <h3 class="text-lg font-bold text-slate-800 mb-2">${c.name}</h3>
+                                <p class="text-xs text-slate-600 leading-relaxed mb-4">${c.description}</p>
+                            </div>
+                        </div>
+                        <div class="p-5 pt-0">
+                            <a href="${c.link}" onclick="alert('Vereinsseite von ${c.name} wird aufgerufen!'); return false;" class="w-full inline-block text-center bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs py-2.5 px-4 rounded-xl transition shadow-sm">
+                                Zum Verein &rarr;
+                            </a>
+                        </div>
                     </div>`;
                 });
-                html += `</div></div></div>`;
+
+                html += `</div>`;
                 container.innerHTML = html;
             },
 
-            async resetData() {
-                if(confirm("Alle Daten unwiderruflich löschen?")) {
-                    await sbClient.from('players').delete().neq('id', 'deleted');
-                    await sbClient.from('history').delete().neq('match_id', 0);
-                    location.reload();
-                }
+            // --- NEWS TAB ---
+            renderNews(container) {
+                let html = `
+                <div class="mb-6">
+                    <h2 class="text-xl font-bold text-slate-800 mb-1">Nachrichten & News</h2>
+                    <p class="text-xs text-slate-500">Aktuelle Berichte, Ankündigungen und Highlights.</p>
+                </div>
+                <div class="space-y-8 mb-10">`;
+
+                this.data.news.forEach((n, idx) => {
+                    html += `
+                    <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                        <div class="w-full h-56 sm:h-72 bg-slate-100 overflow-hidden">
+                            <img src="${n.img}" alt="${n.title}" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>📰</text></svg>'">
+                        </div>
+                        <div class="p-2 bg-slate-50 border-b border-slate-100 text-center">
+                            <p class="text-[11px] text-slate-500 italic">📷 ${n.caption}</p>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">News #${idx+1}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">${n.title}</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed">${n.text}</p>
+                        </div>
+                    </div>`;
+                });
+
+                html += `</div>`;
+                container.innerHTML = html;
             },
 
             renderError(err) {
