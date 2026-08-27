@@ -49,9 +49,9 @@
     <div class="max-w-3xl mx-auto mt-4 px-2">
         <div class="flex bg-white rounded-lg shadow p-1 mb-6 overflow-x-auto">
             <button onclick="app.setTab('rank')" id="btn-rank" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Rangliste</button>
-            <button onclick="app.setTab('match')" id="btn-match" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Match +</button>
+            <button onclick="app.setTab('match')" id="btn-match" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Vereine</button>
             <button onclick="app.setTab('roles')" id="btn-roles" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Vereinsvorstand</button>
-            <button onclick="app.setTab('settings')" id="btn-settings" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">Spieler</button>
+            <button onclick="app.setTab('settings')" id="btn-settings" class="flex-1 py-2 px-2 rounded text-xs sm:text-sm font-medium transition whitespace-nowrap">new</button>
         </div>
 
         <div id="app-content" class="fade-in">
@@ -176,14 +176,6 @@
 
             updateMatchInput(index, value) {
                 this.data.matchInputs[index] = value;
-            },
-
-            updatePlayerName(id, newName) {
-                const p = this.data.players.find(pl => pl.id === id);
-                if(p) {
-                    p.name = newName;
-                    this.saveData(null).catch(e => alert("Fehler beim Speichern"));
-                }
             },
 
             getExpectation(ra, rb) {
@@ -325,6 +317,42 @@
                     </div>
                 </div>`;
 
+                // --- MATCH EINTRAGEN FORMULAR ---
+                const isRanked = this.data.winnerMode === 0;
+                html += `
+                <div class="bg-white rounded-lg shadow p-5 mb-8">
+                    <h2 class="font-bold mb-4">Neues Match eintragen</h2>
+                    <div class="flex gap-2 mb-6">
+                        <button onclick="app.setWinnerMode(0)" class="flex-1 p-2 rounded border text-xs ${isRanked ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 text-slate-600'}">
+                            <strong>Platzierung</strong><br>Alle Plätze zählen
+                        </button>
+                        <button onclick="app.setWinnerMode(1)" class="flex-1 p-2 rounded border text-xs ${!isRanked ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 text-slate-600'}">
+                            <strong>Winner Only</strong><br>Nur 1. Platz wertet
+                        </button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Match Name</label>
+                        <input type="text" id="input-match-name" class="w-full p-2 border rounded text-sm outline-none focus:border-emerald-500 bg-slate-50" placeholder="z.B. Stammtisch-Runde">
+                    </div>
+                    <div class="space-y-3 mb-6">`;
+
+                for(let i=0; i<8; i++) {
+                    let options = `<option value="">-- Leer --</option>`;
+                    this.data.players.forEach(p => {
+                        const selected = this.data.matchInputs[i] === p.id ? 'selected' : '';
+                        options += `<option value="${p.id}" ${selected}>${p.name} (${Math.round(p.elo)})</option>`;
+                    });
+                    html += `
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-400 text-yellow-900' : 'bg-slate-200 text-slate-500'}">${i+1}</div>
+                            <select onchange="app.updateMatchInput(${i}, this.value)" class="flex-1 p-2 border rounded bg-slate-50 text-sm outline-none focus:border-emerald-500">
+                                ${options}
+                            </select>
+                        </div>`;
+                }
+                html += `</div><button id="submit-btn" onclick="app.submitMatch()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded transition shadow">Berechnen & Speichern</button></div>`;
+
+                // --- LETZTE MATCHES ---
                 html += `<h3 class="text-xs font-bold text-slate-400 uppercase mb-3 ml-1">Letzte Matches</h3><div class="space-y-3 mb-8">`;
 
                 if(this.data.history.length === 0) {
@@ -369,29 +397,25 @@
                 setTimeout(() => this.initEloChart(), 50);
             },
 
-initEloChart() {
+            initEloChart() {
                 const ctx = document.getElementById('eloChart');
                 if (!ctx) return;
 
-                // 1. Historie strikt chronologisch sortieren (1, 2, 3...)
                 const chronHistory = [...this.data.history].sort((a, b) => Number(a.match_id) - Number(b.match_id));
                 
                 const currentEloMap = {};
                 const historyPoints = {}; 
                 
-                // Startwert für alle Spieler fix auf 1000.0
                 this.data.players.forEach(p => {
                     currentEloMap[p.id] = 1000.0;
                     historyPoints[p.id] = [1000];
                 });
 
-                // 2. Simulation der Elo-Historie
                 chronHistory.forEach(match => {
                     const activeIds = match.ranking; 
                     const eloDeltas = {};
                     activeIds.forEach(id => eloDeltas[id] = 0);
 
-                    // Modus sicher als Nummer interpretieren (0 = Ranked, 1 = Winner Only)
                     const currentMode = Number(match.mode);
 
                     for (let i = 0; i < activeIds.length; i++) {
@@ -405,10 +429,8 @@ initEloChart() {
                             const expA = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
                             const expB = 1 / (1 + Math.pow(10, (eloA - eloB) / 400));
 
-                            // Score Logik exakt wie in submitMatch
                             let scoreA = (currentMode === 1) ? (i === 0 ? 1 : 0) : (i < j ? 1 : 0);
                             
-                            // Im "Winner Only" Modus zählen nur Duelle, wo der Sieger (Index 0) beteiligt ist
                             if (currentMode === 1 && i !== 0) continue;
 
                             eloDeltas[idA] += K_FACTOR * (scoreA - expA);
@@ -416,17 +438,14 @@ initEloChart() {
                         }
                     }
 
-                    // Werte aktualisieren
                     this.data.players.forEach(p => {
                         if (eloDeltas[p.id] !== undefined) {
                             currentEloMap[p.id] += eloDeltas[p.id];
                         }
-                        // Wir speichern den gerundeten Wert für den Graph-Punkt
                         historyPoints[p.id].push(Math.round(currentEloMap[p.id]));
                     });
                 });
 
-                // 3. Chart.js Zeichnen
                 const labels = ["Start", ...chronHistory.map((m) => m.match_name ? m.match_name : `Spü ${m.match_id}`)];
                 const colors = ['#059669', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#718096'];
 
@@ -460,39 +479,11 @@ initEloChart() {
             },
 
             renderMatch(container) {
-                const isRanked = this.data.winnerMode === 0;
-                let html = `
-                    <div class="bg-white rounded-lg shadow p-5">
-                        <h2 class="font-bold mb-4">Neues Match eintragen</h2>
-                        <div class="flex gap-2 mb-6">
-                            <button onclick="app.setWinnerMode(0)" class="flex-1 p-2 rounded border text-xs ${isRanked ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 text-slate-600'}">
-                                <strong>Platzierung</strong><br>Alle Plätze zählen
-                            </button>
-                            <button onclick="app.setWinnerMode(1)" class="flex-1 p-2 rounded border text-xs ${!isRanked ? 'bg-emerald-600 text-white shadow-inner' : 'bg-slate-50 text-slate-600'}">
-                                <strong>Winner Only</strong><br>Nur 1. Platz wertet
-                            </button>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Match Name</label>
-                            <input type="text" id="input-match-name" class="w-full p-2 border rounded text-sm outline-none focus:border-emerald-500 bg-slate-50" placeholder="z.B. Stammtisch-Runde">
-                        </div>
-                        <div class="space-y-3 mb-6">`;
-
-                for(let i=0; i<8; i++) {
-                    let options = `<option value="">-- Leer --</option>`;
-                    this.data.players.forEach(p => {
-                        const selected = this.data.matchInputs[i] === p.id ? 'selected' : '';
-                        options += `<option value="${p.id}" ${selected}>${p.name} (${Math.round(p.elo)})</option>`;
-                    });
-                    html += `
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i===0 ? 'bg-yellow-400 text-yellow-900' : 'bg-slate-200 text-slate-500'}">${i+1}</div>
-                            <select onchange="app.updateMatchInput(${i}, this.value)" class="flex-1 p-2 border rounded bg-slate-50 text-sm outline-none focus:border-emerald-500">
-                                ${options}
-                            </select>
-                        </div>`;
-                }
-                container.innerHTML = html + `</div><button id="submit-btn" onclick="app.submitMatch()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded transition shadow">Berechnen & Speichern</button></div>`;
+                let html = `<div class="bg-white rounded-lg shadow p-5">
+                        <h2 class="font-bold mb-4">Vereine</h2>
+                        <p class="text-sm text-slate-500">Keine Vereine vorhanden.</p>
+                    </div>`;
+                container.innerHTML = html;
             },
 
             renderSettings(container) {
@@ -504,7 +495,7 @@ initEloChart() {
                 this.data.players.forEach((p, i) => {
                     html += `<div class="flex items-center gap-2">
                         <span class="text-xs text-slate-400 w-4">${i+1}</span>
-                        <input type="text" value="${p.name}" onchange="app.updatePlayerName('${p.id}', this.value)" class="flex-1 p-2 border rounded text-sm focus:border-emerald-500 outline-none">
+                        <span class="flex-1 p-2 border rounded text-sm bg-slate-50 text-slate-700 font-medium">${p.name}</span>
                     </div>`;
                 });
                 html += `</div></div></div>`;
