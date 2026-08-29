@@ -540,6 +540,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">`;
 
                 this.data.clubs.forEach(c => {
+                    const hasLink = c.link && c.link !== "#";
                     html += `
                     <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden flex flex-col justify-between transition-transform hover:scale-[1.02]">
                         <div>
@@ -551,21 +552,26 @@
                             </div>
                             <div class="p-5">
                                 <h3 class="text-lg font-bold text-slate-800 mb-2">${c.name}</h3>
-                                <p class="text-xs text-slate-600 leading-relaxed mb-4">${c.description}</p>
+                                <p class="text-xs text-slate-600 leading-relaxed">${c.description}</p>
                             </div>
                         </div>
                         <div class="p-5 pt-0">
-                            <a href="${c.link}" onclick="alert('Vereinsseite von ${c.name} wird aufgerufen!'); return false;" class="w-full inline-block text-center bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs py-2.5 px-4 rounded-xl transition shadow-sm">
-                                Zum Verein &rarr;
-                            </a>
+                            ${hasLink ? `
+                                <a href="${c.link}" target="_blank" rel="noopener noreferrer" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-lg transition shadow-sm">
+                                    Verein besuchen
+                                </a>
+                            ` : `
+                                <button disabled class="w-full bg-slate-100 text-slate-400 text-xs font-bold py-2.5 px-4 rounded-lg cursor-not-allowed">
+                                    Kein Link verfügbar
+                                </button>
+                            `}
                         </div>
                     </div>`;
                 });
 
-                html += `</div>`;
-                container.innerHTML = html;
+                container.innerHTML = html + `</div>`;
             },
-
+            
             // --- NEWS TAB ---
             renderNews(container) {
                 let html = `
